@@ -1,0 +1,5 @@
+{
+  "token":"token",
+  "channel_id":"channel id you want the bot to use",
+  "prefix":";"
+}
