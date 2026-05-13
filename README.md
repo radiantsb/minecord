@@ -19,7 +19,7 @@ a python script that uses the minescript mod to allow people in a discord channe
 - move [wasd] [optional seconds<10] - move in a direction for the specified amount of time
 - attack [optional seconds<10] - press the left mouse button for the specified amount of time
 - use - press the right mouse button
-- jump [optional seconds<10]- duh
+- jump [optional seconds<10] - duh
 - look [left,right,up,down] [degrees] - look in the specified direction
 - hotbar [1-9] - select the given hotbar slot
 - inventory - open or close the inventory (use this to close other guis as well)
