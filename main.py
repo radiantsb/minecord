@@ -41,7 +41,7 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
     move [wasd] [optional seconds<10] - move in a direction for the specified amount of time
     attack [optional seconds<10] - press the left mouse button for the specified amount of time
     use - press the right mouse button
-    jump - duh
+    jump [optional seconds<10] - duh
     look [left,right,up,down] [degrees] - look in the specified direction
     hotbar [1-9] - select the given hotbar slot
     inventory - open or close the inventory (use this to close other guis as well)
@@ -49,7 +49,7 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
     click [left,right] - send a mouse click (use for guis)"""
         case "move":
             try:
-                time = int(command[2])
+                time = float(command[2])
             except Exception:  # default to 1 second if time not specified
                 time = 1
             if time > 10:
@@ -76,7 +76,7 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
             mc.echo(f"{user} pressed {command[1][0]} for {time} seconds")
         case "attack":
             try:
-                time = int(command[1])
+                time = float(command[1])
             except Exception:
                 time = 0.1
             if time > 10:
@@ -90,14 +90,20 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
             mc.player_press_use(False)
             mc.echo(f"{user} used the held item")
         case "jump":
+            try:
+                time = float(command[1])
+            except Exception:
+                time = 0.1
+            if time > 10:
+                time = 10
             mc.player_press_jump(True)
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(time)
             mc.player_press_jump(False)
             mc.echo(f"{user} pressed jump")
         case "look":
             look = mc.player_orientation()
             try:
-                magnitude = int(command[2])
+                magnitude = float(command[2])
             except Exception:
                 magnitude = 90
             match command[1]:
@@ -121,13 +127,13 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
             mc.player_inventory_select_slot(slot)
             mc.echo(f"{user} selected hotbar slot {slot + 1}")
         case "inventory":
-            mc.press_key_bind("key.inventory", True)
+            ahk.keyDown("e")
             await asyncio.sleep(0.1)
-            mc.press_key_bind("key.inventory", False)
+            ahk.keyUp("e")
             mc.echo(f"{user} toggled inventory")
         case "mouse":
             try:
-                magnitude = int(command[2])
+                magnitude = float(command[2])
             except Exception:
                 magnitude = 100
             match command[1]:
