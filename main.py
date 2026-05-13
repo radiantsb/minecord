@@ -1,15 +1,28 @@
 from typing import List, Union
 import discord
-from os import getenv
 import minescript as mc
 import asyncio
+import json
+
 import pyautogui as ahk
+
+# need to use a config file because env variables dont work with minescript
+with open("minecord.json") as cfg_file:
+    config = json.load(cfg_file)
+    try:
+        prefix = config["prefix"]
+    except Exception:
+        prefix = ";"
+    try:
+        token = config["token"]
+    except Exception:
+        mc.echo("couldnt access token in config file")
+        exit(-1)
+    channel_id = int(config["channel_id"])
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
-prefix = ";"
 
-token = getenv("DISCORD_TOKEN")
 intents = discord.Intents.default()
 intents.message_content = True
 bot = discord.Bot(intents=intents)
@@ -24,25 +37,24 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
     match command[0][1:]:  # use [1:] to remove the prefix
         case "help":
             return """commands:
-            help - list all commands
-            move [wasd] [optional seconds<10] - move in a direction for the specified amount of time
-            attack [optional seconds<10] - press the left mouse button for the specified amount of time
-            use - press the right mouse button
-            jump - duh
-            look [left,right,up,down] [degrees] - look in the specified direction
-            hotbar [1-9] - select the given hotbar slot
-            inventory - open or close the inventory (use this to close other guis as well)
-            mouse [left,right,up,down] [pixels] - move the mouse (use for guis)
-            click [left,right] - send a mouse click (use for guis)
-            """
+    help - list all commands
+    move [wasd] [optional seconds<10] - move in a direction for the specified amount of time
+    attack [optional seconds<10] - press the left mouse button for the specified amount of time
+    use - press the right mouse button
+    jump - duh
+    look [left,right,up,down] [degrees] - look in the specified direction
+    hotbar [1-9] - select the given hotbar slot
+    inventory - open or close the inventory (use this to close other guis as well)
+    mouse [left,right,up,down] [pixels] - move the mouse (use for guis)
+    click [left,right] - send a mouse click (use for guis)"""
         case "move":
             try:
-                time = int(command[3])
+                time = int(command[2])
             except Exception:  # default to 1 second if time not specified
                 time = 1
             if time > 10:
                 time = 10
-            match command[2][0]:
+            match command[1][0]:
                 case "w":
                     mc.player_press_forward(True)
                     await asyncio.sleep(time)
@@ -61,10 +73,10 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
                     mc.player_press_right(False)
                 case _:
                     return "invalid usage, 2nd command must be w,a,s,d"
-            mc.echo(f"{user} pressed {command[2][0]} for {time} seconds")
+            mc.echo(f"{user} pressed {command[1][0]} for {time} seconds")
         case "attack":
             try:
-                time = int(command[2])
+                time = int(command[1])
             except Exception:
                 time = 0.1
             if time > 10:
@@ -79,6 +91,7 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
             mc.echo(f"{user} used the held item")
         case "jump":
             mc.player_press_jump(True)
+            await asyncio.sleep(0.1)
             mc.player_press_jump(False)
             mc.echo(f"{user} pressed jump")
         case "look":
@@ -93,12 +106,12 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
                 case "right":
                     look[0] += magnitude
                 case "up":
-                    look[1] += magnitude
-                case "down":
                     look[1] -= magnitude
+                case "down":
+                    look[1] += magnitude
                 case _:
                     return "invalid usage, 2nd command must be left,right,up,down"
-            mc.player_set_oritentation(look)
+            mc.player_set_orientation(*look)
             mc.echo(f"{user} looked {command[1]} {magnitude} degrees")
         case "hotbar":
             try:
@@ -108,7 +121,9 @@ async def process_command(command: List[str], user: str) -> Union[str, None]:
             mc.player_inventory_select_slot(slot)
             mc.echo(f"{user} selected hotbar slot {slot + 1}")
         case "inventory":
-            mc.press_key_bind("key.inventory")
+            mc.press_key_bind("key.inventory", True)
+            await asyncio.sleep(0.1)
+            mc.press_key_bind("key.inventory", False)
             mc.echo(f"{user} toggled inventory")
         case "mouse":
             try:
@@ -143,6 +158,8 @@ async def on_message(message):
     author = message.author
     if author == bot.user:
         return
+    if message.channel.id != channel_id:
+        return
     text = message.content
     if text[0] == prefix:
         command = text.split(" ")
@@ -150,7 +167,7 @@ async def on_message(message):
         if result is None:
             return
         else:
-            message.reply(result)
+            await message.reply(result)
     else:
         return
 
